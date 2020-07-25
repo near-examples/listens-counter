@@ -49,18 +49,25 @@ async function runBenchmark() {
 
     console.log('Submitting transactions');
     const all = [];
+    let numFailed = 0;
     console.time('submit transactions');
     for (let i = 0; i < NUM_ACCOUNTS; i++) {
         all.push((async () => {
             for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
                 const contract = contracts[i];
-                await contract.trackListened({ trackId: `Song ${j}` });
-                process.stdout.write((j % 10).toString());
+                try {
+                    await contract.trackListened({ trackId: `Song ${j}` });
+                    process.stdout.write((j % 10).toString());
+                } catch (e) {
+                    numFailed++;
+                    process.stdout.write('E');
+                }
             }
         })());
     }
     await Promise.all(all);
     console.timeEnd('submit transactions');
+    console.log('Number of failed transactions: ', numFailed);
 }
 
 runBenchmark().catch(console.error);
