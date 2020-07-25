@@ -68,6 +68,7 @@ async function runBenchmark() {
                 } catch (e) {
                     numFailed++;
                     process.stdout.write('E');
+                    console.error(e);
                 }
             }
         })());
