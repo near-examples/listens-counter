@@ -2,6 +2,13 @@ const { Contract, KeyPair, connect } = require('near-api-js');
 const { InMemoryKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
+if (process.argv.length !== 4) {
+    console.log('Usage: node src/benchmark.js <NUM_ACCOUNTS> <TRANSACTIONS_PER_ACCOUNT>');
+    process.exit(1);
+}
+
+const [ NUM_ACCOUNTS, TRANSACTIONS_PER_ACCOUNT ] = process.argv.slice(2).map((s) => parseInt(s));
+
 async function runBenchmark() {
     const contractConfig = {
         viewMethods: [],
@@ -22,9 +29,6 @@ async function runBenchmark() {
     const masterAccount = await near.createAccount(masterAccountName, keyPair.publicKey.toString());
     await masterAccount.deployContract(require('fs').readFileSync('./out/main.wasm'));
 
-    const NUM_ACCOUNTS = 50;
-    const TRANSACTIONS_PER_ACCOUNT = 30;
-
     console.log('Creating accounts')
     console.time('create accounts');
     let contracts = [];
@@ -38,27 +42,20 @@ async function runBenchmark() {
             const contract = new Contract(account, contractName, contractConfig);
             return contract
         })());
-        await sleep(200);
+        await sleep(500);
     }
     contracts = await Promise.all(contracts);
     console.timeEnd('create accounts');
 
+    console.log('Submitting transactions');
     const all = [];
     console.time('submit transactions');
-    // for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
-    //   for (let i = 0; i < NUM_ACCOUNTS; i++) {
-    //     const contract = contracts[i];
-    //     all.push(contract.trackListened({ trackId: `Song ${j}` }));
-    //     await sleep(10);
-    //   }
-    // }
     for (let i = 0; i < NUM_ACCOUNTS; i++) {
         all.push((async () => {
             for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
                 const contract = contracts[i];
                 await contract.trackListened({ trackId: `Song ${j}` });
-                //console.log('i j', i, j);
-                process.stdout.write('.');
+                process.stdout.write((j % 10).toString());
             }
         })());
     }
