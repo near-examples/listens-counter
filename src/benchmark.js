@@ -1,5 +1,5 @@
 const { Contract, KeyPair, connect } = require('near-api-js');
-const { InMemoryKeyStore } = require('near-api-js').keyStores;
+const { InMemoryKeyStore, MergeKeyStore, UnencryptedFileSystemKeyStore } = require('near-api-js').keyStores;
 const { parseNearAmount } = require('near-api-js').utils.format;
 
 if (process.argv.length !== 4) {
@@ -15,14 +15,17 @@ async function runBenchmark() {
         changeMethods: ['trackListened'],
     }
 
-    const config = require('./config')(process.NODE_ENV || 'development');
-    const keyStore = new InMemoryKeyStore();
+    const config = require('./config')(process.env.NODE_ENV || 'development');
+    const keyStore = new MergeKeyStore([
+        new InMemoryKeyStore(),
+        new UnencryptedFileSystemKeyStore('./neardev')
+    ]);
     const near = await connect({ ...config, keyStore });
 
     const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time));
 
     console.log('Setting up and deploying contract');
-    const masterAccountName = `test-${Date.now()}.testnet`;
+    const masterAccountName = `listens-counter-test-account-${Date.now()}`;
     const contractName = masterAccountName;
     const keyPair = KeyPair.fromRandom('ed25519');
     await keyStore.setKey(config.networkId, masterAccountName, keyPair);
@@ -34,7 +37,7 @@ async function runBenchmark() {
     let contracts = [];
     for (let i = 0; i < NUM_ACCOUNTS; i++) {
         contracts.push((async () => {
-            const accountId = `test-user-${i}.${masterAccount.accountId}`;
+            const accountId = `listens-counter-test-user-${Date.now()}-${i}`;
             const keyPair = KeyPair.fromRandom('ed25519');
             await keyStore.setKey(config.networkId, accountId, keyPair);
             await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
