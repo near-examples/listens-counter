@@ -39,8 +39,8 @@ async function runBenchmark() {
     for (let i = 0; i < NUM_ACCOUNTS; ) {
         let batch = [];
         for (let j = 0; j < 10; j++, i++) {
+            const accountId = `${accountPrefix}-${i}`;
             batch.push((async () => {
-                const accountId = `${accountPrefix}-${i}`;
                 const keyPair = KeyPair.fromRandom('ed25519');
                 await keyStore.setKey(config.networkId, accountId, keyPair);
                 await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
