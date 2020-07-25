@@ -34,20 +34,24 @@ async function runBenchmark() {
 
     console.log('Creating accounts')
     console.time('create accounts');
+    const accountPrefix = `listens-counter-test-user-${Date.now()}`;
     let contracts = [];
-    for (let i = 0; i < NUM_ACCOUNTS; i++) {
-        contracts.push((async () => {
-            const accountId = `listens-counter-test-user-${Date.now()}-${i}`;
-            const keyPair = KeyPair.fromRandom('ed25519');
-            await keyStore.setKey(config.networkId, accountId, keyPair);
-            await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
-            const account = await near.account(accountId);
-            const contract = new Contract(account, contractName, contractConfig);
-            return contract
-        })());
-        await sleep(500);
+    for (let i = 0; i < NUM_ACCOUNTS; ) {
+        let batch = [];
+        for (let j = 0; j < 10; j++, i++) {
+            batch.push((async () => {
+                const accountId = `${accountPrefix}-${i}`;
+                const keyPair = KeyPair.fromRandom('ed25519');
+                await keyStore.setKey(config.networkId, accountId, keyPair);
+                await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
+                const account = await near.account(accountId);
+                const contract = new Contract(account, contractName, contractConfig);
+                return contract
+            })());
+        }
+        contracts = contracts.concat(await Promise.all(batch));
+        process.stdout.write('-');
     }
-    contracts = await Promise.all(contracts);
     console.timeEnd('create accounts');
 
     console.log('Submitting transactions');
