@@ -43,7 +43,7 @@ async function runBenchmark() {
             batch.push((async () => {
                 const keyPair = KeyPair.fromRandom('ed25519');
                 await keyStore.setKey(config.networkId, accountId, keyPair);
-                await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('0.1'));
+                await masterAccount.createAccount(accountId, keyPair.publicKey, parseNearAmount('2'));
                 const account = await near.account(accountId);
                 const contract = new Contract(account, contractName, contractConfig);
                 return contract
@@ -63,7 +63,8 @@ async function runBenchmark() {
             for (let j = 0; j < TRANSACTIONS_PER_ACCOUNT; j++) {
                 const contract = contracts[i];
                 try {
-                    await contract.trackListened({ trackId: `Song ${j}` });
+                    //await contract.trackListened({ trackId: `Song ${j}` });
+                    await contract.account.sendMoney(masterAccount.accountId, parseNearAmount('0.0001'));
                     process.stdout.write((j % 10).toString());
                 } catch (e) {
                     numFailed++;
