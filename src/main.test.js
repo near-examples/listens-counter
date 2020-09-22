@@ -13,7 +13,7 @@ const contractConfig = {
 beforeAll(async function () {
   ctx = {};
 
-  // NOTE: nearlib and nearConfig are made available by near-shell/test_environment
+  // NOTE: nearlib and nearConfig are made available by near-cli/test_environment
   ctx.near = await nearAPI.connect(nearConfig);
   ctx.accountId = nearConfig.contractName;
   ctx.contract = await ctx.near.loadContract(nearConfig.contractName, {
